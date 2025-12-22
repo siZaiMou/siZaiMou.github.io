@@ -1,0 +1,485 @@
+---
+layout: post
+title: "Java 基础：八股学习记录和补充"
+categories: [学习记录]
+---
+
+# Java基础
+
+# 跨平台
+
+Java程序被编译成字节码，JVM将字节码翻译为不同平台下的机器码，从而运行java程序。
+
+跨平台已经不是 Java 最大的卖点了，各种 JDK 新特性也不是。目前市面上虚拟化技术已经非常成熟，比如你通过 Docker 就很容易实现跨平台了,Java 强大的生态才是。
+
+# JDK&JRE&JVM
+
+1. JVM是Java虚拟机，是Java程序运行的环境。负责将Java字节码（由Java编译器生成）解释或编译成机器码，并执行程序。提供了内存管理、垃圾回收、安全性等功能，使得Java程序具备跨平台性。解释自己的指令集（即字节码）并映射到本地的CPU指令集和OS的系统调用。
+2. JDK是Java开发工具包，是开发Java程序所需的工具集合。它包含了JVM、编译器（javac）、调试器（jdb）等开发工具，以及一系列的类库（如Java标准库和开发工具库）。
+3. JRE是Java运行时环境，是Java程序运行所需的最小环境。它包含了JVM和一组Java类库。
+
+从 JDK 9 开始，就不需要区分 JDK 和 JRE 的关系了，取而代之的是模块系统（JDK 被重新组织成 94 个模块）+ jlinkopen in new window 工具 (随 Java 9 一起发布的新命令行工具，用于生成自定义 Java 运行时映像，该映像仅包含给定应用程序所需的模块) 。并且，从 JDK 11 开始，Oracle 不再提供单独的 JRE 下载。
+
+# 编译&解释&JIT&AOT
+
+Java既是编译型也是解释性语言，默认采用的是解释器和编译器混合的模式
+
+编译性：Java源代码首先被编译成字节码。
+
+解释性：JVM中一个方法调用计数器(PC,解释的字节码的行数)，当累计计数大于一定值的时候，就使用JIT进行编译生成机器码文件。否则就是用解释器进行解释执行，然后字节码也是经过解释器进行解释运行的。
+
+![](/assets/VC0Wb88QvorYj4xgNhXcnpwTncf.png)
+
+## JIT
+
+传统java：代码->.class->jvm。给 Java 程序带来了一些性能问题，比如启动速度慢和运行时内存占用高等。
+
+JIT(Just in Time Compilation)属于运行时编译。是 JVM 在**程序运行时**，**动态地把热点字节码编译成机器码**，让后续执行直接运行机器码，不用反复解释字节码，从而加快性能。HotSpot JVM
+
+JVM 专门划出一块内存区域（属于堆外内存），用于存放 JIT 编译生成的本地机器码。仅在当前 JVM 进程生命周期内有效，进程结束后，Code Cache 中的内容会被释放，不会持久化到磁盘。
+
+## AOT
+
+AOT(Ahead-of-Time Compilation，AOT Compilation)是提前编译/静态编译，在**程序运行前**，就把 **字节码编译成本地机器码**，然后在编译阶段进行代码编译优化，消除冷启动，属于静态编译。AOT 编译无法支持 Java 的一些动态特性，如反射、动态代理、动态加载、JNI（Java Native Interface）等。GraalVM 
+
+编译产物通常是一个**动态链接库（.so/.dll/.dylib）** 或特定格式的二进制文件。
+
+
+
+# 基本类&包装类
+
+基本数据类型的存储位置取决于它们的作用域和声明方式。如果它们是局部变量，那么它们会存放在栈中；如果它们是成员变量，那么它们会存放在堆中。
+
+自动装箱有一个问题，那就是在一个循环中进行自动装箱操作的情况，如下面的例子就会创建多余的对象，影响程序的性能。
+
+![](/assets/OejebheX2obVXixmjNAcBOlmnQg.png)
+
+Byte,Short,Integer,Long 这 4 种包装类默认创建了数值 [-128，127] 的相应类型的缓存数据，Character 创建了数值在 [0,127] 范围的缓存数据，Boolean 直接返回 True or False。缓存命中时，装箱或valueOf 不会产生新对象，但是new会。
+
+
+```Java
+//自动装箱
+Integer a = 10;
+//等价于
+Integer a = Integer.valueOf(10);
+
+//自动拆箱
+int b = a;
+//等价于
+int b = a.intValue();
+```
+
+# 面向对象
+
+面向对象是一种编程范式，它将现实世界中的事物抽象为对象，对象具有属性（称为字段或属性）和行为（称为方法）。面向对象编程的设计思想是以对象为中心，通过对象之间的交互来完成程序的功能，具有灵活性和可扩展性，通过封装和继承可以更好地应对需求变化。
+
+Java面向对象的三大特性包括：封装、继承、多态
+
+* 封装：封装是指将对象的属性（数据）和行为（方法）结合在一起，对外隐藏对象的内部细节，仅通过对象提供的接口与外界交互。封装的目的是增强安全性和简化编程，使得对象更加独立。
+* 继承：继承是一种可以使得子类自动共享父类数据结构和方法的机制。它是代码复用的重要手段，通过继承可以建立类与类之间的层次关系，使得结构更加清晰。
+* 多态：多态是指允许同一个行为（方法）在不同对象上具有不同表现形式。即同一个接口，使用不同的实例而执行不同操作。它使得程序具有良好的灵活性和扩展性。
+
+## 抽象类&普通类&接口
+
+### 抽象类和普通类区别
+
+实例化：普通类可以直接实例化对象，而抽象类不能被实例化，只能被继承。
+
+实现限制：普通类可以被其他类继承和使用，而抽象类一般用于作为基类/模板类，被其他类继承和扩展使用。
+
+### 抽象类和接口的区别
+
+实现方式：实现接口的关键字为implements，继承抽象类的关键字为extends。一个类可以实现多个接口，但一个类只能继承一个抽象类。所以，使用接口可以间接地实现多重继承。
+
+方法方式：接口只有定义，不能有方法的实现，java 1.8中可以定义default方法体，而抽象类可以有定义与实现，方法可在抽象类中实现。
+
+接口可以包括的方法：
+
+1. 默认方法是在 Java 8 中引入的，允许接口提供具体实现。实现类可以选择重写默认方法。
+1. 静态方法也是在 Java 8 中引入的，它们属于接口本身，可以通过接口名直接调用，而不需要实现类的对象。
+1. 私有方法是在 Java 9 中引入的，用于在接口中为默认方法或其他私有方法提供辅助功能。这些方法不能被实现类访问，只能在接口内部使用。
+访问修饰符：接口成员变量默认为public static final，必须赋初值，不能被修改；其所有的成员方法都是public、abstract的。抽象类中成员变量默认default，可在子类中被重新定义，也可被重新赋值；抽象方法被abstract修饰，不能被private、static、synchronized和native等修饰，必须以分号结尾，不带花括号。
+
+变量：抽象类可以包含实例变量和静态变量，而接口只能包含常量（即静态常量）。
+
+使用场景：
+
+* 抽象类：是一种“**模板类**”，代表一类事物的**共性特征**，用来被继承，不能直接实例化。
+* 接口：是一种“**行为规范**”或“能力契约”，表示一个类**能做什么**，不管它是什么。
+## 静态变量和静态方法
+
+静态变量和静态方法是与类本身关联的，而不是与类的实例（对象）关联。它们在内存中只存在一份，可以被类的所有实例共享。
+
+静态方法可以使用任何访问修饰符。
+
+静态方法不能调用非静态成员变量，因为类的非静态成员不存在的时候静态方法就已经存在了，此时调用在内存中还不存在的非静态成员，属于非法操作。静态方法不支持重写（Override），但可以被隐藏（Hide）。
+
+![](/assets/ZckvbaMzVoA39kxISIgcYl53ntf.jpeg)
+
+
+
+## 静态内部类&非静态内部类
+
+### 区别：
+
+1. 非静态内部类依赖于外部类的实例-只能通过外部类实例创建，而静态内部类不依赖于外部类的实例。
+
+![](/assets/FIrYbr3a2oaIVLxxUdYcFWHsnyf.png)
+
+![](/assets/AWxIbQIUOohexUx5Pgec50gbnVe.png)
+
+1. 非静态内部类可以访问外部类的实例变量和方法，而静态内部类只能访问外部类的静态成员。
+2. 非静态内部类不能定义静态成员，而静态内部类可以定义静态成员。
+    * 非静态内部类被认为是外部类的**成员对象**，在类加载的时候，静态属性和代码块会先加载，那么按照这个逻辑，非静态内部类里面的静态属性也要优先于这个内部类加载，但这个时候这个内部类都还没有初始化，这就出现矛盾了。
+
+### 非静态内部类可以直接访问外部方法
+
+编译器在生成字节码时会为非静态内部类维护一个指向外部类**实例**的引用。
+
+## new子类对象的加载顺序
+
+1. 父类静态成员变量、静态代码块
+2. 子类静态成员变量、静态代码块
+3. 父类构造方法
+4. 子类构造方法
+
+## 深拷贝和浅拷贝
+
+浅拷贝：浅拷贝会在堆上创建一个新的对象（区别于引用拷贝的一点），不过，如果原对象内部的属性是引用类型的话，浅拷贝会直接复制内部对象的引用地址，也就是说拷贝对象和原对象共用同一个内部对象。
+
+深拷贝：深拷贝会完全复制整个对象，包括这个对象所包含的内部对象。实现方法有：
+
+1. 实现 Cloneable 接口并重写 clone() 方法，手动克隆成员对象。
+2. 使用序列化和反序列化：通过将对象序列化为字节流，再从字节流反序列化为对象来实现深拷贝。要求对象及其所有引用类型字段都实现 Serializable 接口。
+3. 手动递归复制：针对特定对象结构，手动递归复制对象及其引用类型字段。适用于对象结构复杂度不高的情况。
+
+Java中方法参数传递方式是按值传递。如果参数是基本类型，传递的是基本类型的字面量值的拷贝。如果参数是引用类型，传递的是该参量所引用的对象在堆中地址值的拷贝。
+
+![](/assets/Wdh4bk2dKo0Eu4xntd4co56QnWh.jpeg)
+
+
+
+# 泛型
+
+泛型是 Java 编程语言中的一个重要特性(语法糖)，它允许类、接口和方法在定义时使用一个或多个类型参数，这些类型参数在使用时可以被指定为具体的类型。**不能使用泛型创建数组。**
+
+
+```TypeScript
+// 泛型类
+class Box<T> {
+    private T value;
+    public void set(T value) { this.value = value; }
+    public T get() { return value; }
+}
+// 泛型接口/方法
+public <T> T copy(T obj) {
+    return obj;
+}
+```
+
+一个泛型队列，狗可以站进来，猫也可以站进来，但最好不要既站猫，又站狗。
+
+泛型擦除：Java 的泛型 **在编译期检查类型安全**，而 **运行时 JVM 不保留泛型类型信息**，编译后会 **擦除类型参数**，这种机制称为 **泛型擦除（Type Erasure）**。
+
+* 泛型边界（Bound）指 泛型类型参数允许的类型范围，主要用于约束泛型类型，保证类型安全。
+  * 上界：`T extends SomeClass` → **T 及其子类**都可以，默认Object，编译后，`T` 被 **擦除为上界类型。**
+  * 下界：下界一般在 **通配符中使用**，例如 `? super T` 。表示泛型参数可以是 T 本身或 T 的父类
+  如果不写上界，默认是 `Object`
+* **运行时无法判断泛型类型：**
+
+```Java
+if(obj instanceof Box<String>) {} // ❌ 编译错误
+```
+
+# 函数式接口
+
+函数式接口是 只包含一个抽象方法的接口，可以隐式转换为 Lambda 表达式。
+
+Lambda 表达式本质上是函数式接口的实例。编译器会根据函数式接口推导类型。
+
+定义方式：
+
+1.  定义接口并保证 **只有一个抽象方法**
+2. 推荐加上 `@FunctionalInterface` 注解，编译器会检查接口是否满足函数式接口要求。
+
+# 对象
+
+## 创建对象的方式
+
+1. 使用new关键字
+2. 使用Class类的newInstance()方法
+
+![](/assets/S4Scbr11IoPyiCxxJVGcSWQ8nEc.png)
+
+1. 如果类实现了Cloneable接口，可以使用clone()方法复制对象。
+2. 使用反序列化
+
+## 继承规则
+
+* 要成功重写，子类方法必须与父类被重写方法拥有完全相同的方法签名​（方法名、参数列表）和返回类型​（或是其子类，JDK 5+ 支持协变返回类型-允许返回类型是父类方法返回类型的**子类**）。
+* 子类重写方法的访问权限不能比父类方法更严格​（例如，父类方法是 `protected`，子类可以是 `protected`或 `public`，但不能是 `private`或 `default`）
+  * 访问权限规则确保 “父类允许的访问，子类不能禁止”；
+* 子类重写方法不能抛出比父类方法更宽泛的检查异常（即不能抛出父类方法抛出异常的父类）
+  * 父类声明的风险范围，子类不能扩大
+* 被 `final`、`static`或 `private`修饰的父类方法不能被重写
+
+# 反射
+
+在运行状态中，对于任意一个类，都能够知道这个类中的所有属性和方法，对于任意一个对象，都能够调用它的任意一个方法和属性；这种动态获取的信息以及动态调用对象的方法的功能称为 Java 语言的反射机制。
+
+![](/assets/K1zBbpKohojMX5xTs4Tc3kxBn5e.png)
+
+## 应用场景
+
+1. 加载数据库驱动
+2. 加载配置文件
+3. 获取类的class实例、创建实例对象、调用方法
+
+# AOP
+
+AOP（Aspect-Oriented Programming，面向切面编程）是一种编程范式，核心思想是**将与业务逻辑无关但被多个模块共同调用的通用功能（如日志、事务、权限校验等）抽离出来，形成独立的 “切面”**，通过动态织入的方式在不修改原有业务代码的前提下，对业务方法进行增强。
+
+AOP 解决了传统 OOP 中 “横切关注点”（跨多个类的重复代码）的代码冗余问题，提高了代码的复用性和可维护性。
+
+Spring AOP 基于注解的开发模式中，<mark style="background-color: #BBBFC4">`@Aspect`</mark> 定义切面，<mark style="background-color: #BBBFC4">`@Pointcut`</mark> 定义目标范围，<mark style="background-color: #BBBFC4">`@Before`</mark>/<mark style="background-color: #BBBFC4">`@After`</mark>/<mark style="background-color: #BBBFC4">`@Around`</mark> 等注解定义增强逻辑。这些注解简化了 AOP 的使用
+
+### AOP 核心概念
+
+* **切面（Aspect）**：封装横切关注点的类（如日志切面、事务切面），包含通知和切入点。
+* **通知（Advice）**：切面的具体执行逻辑（如日志打印代码），按执行时机分为 5 种类型。
+* **切入点（Pointcut）**：定义通知作用的 “目标方法范围”（如指定哪些类的哪些方法需要被增强）。
+* **连接点（JoinPoint）**：程序执行过程中可被增强的点（如方法调用、异常抛出等，切入点是连接点的子集）。
+* **织入（Weaving）**：将切面代码插入到目标方法的过程（Spring AOP 默认在运行时通过动态代理织入）。
+
+# 注解
+
+注解本质是一个继承了Annotation的特殊接口， Java 提供的一种 元数据机制，用于向类、方法、字段、参数等元素 提供额外信息。
+
+编译器会为注解生成 **动态代理对象**（`Proxy`）实现接口，运行期调用 `getAnnotation()`，返回 **动态代理对象**，内部持有注解属性值。
+
+# 异常
+
+![](/assets/XFCIbnmEkozFLJxQMHDc4MJdnIH.png)
+
+![](/assets/QNWfbjxX8oIt3mxMyQJc2hrxnQf.png)
+
+## Error
+
+表示运行时环境的错误。错误是程序无法处理的严重问题，如系统崩溃、虚拟机错误、动态链接失败等。通常，程序不应该尝试捕获这类错误。例如，OutOfMemoryError、StackOverflowError等。
+
+## Exception
+
+表示程序本身可以处理的异常条件。异常分为两大类：
+
+1. 非运行时异常-检查型异常：这类异常在编译时期就必须被捕获或者声明抛出。它们通常是外部错误，如文件不存在（FileNotFoundException）、类未找到（ClassNotFoundException）等。非运行时异常强制程序员处理这些可能出现的问题，增强了程序的健壮性。
+2. 运行时异常-非检查异常：这类异常包括运行时异常（RuntimeException）和错误（Error）。运行时异常由程序错误导致，如空指针访问（NullPointerException）、数组越界（ArrayIndexOutOfBoundsException）等。运行时异常是不需要在编译时强制捕获或声明的。
+
+## 处理
+
+* 如果异常是未检查异常(Unchecked)或者在方法内部被捕获和处理了，那么就不需要使用throws。
+* 无论是否捕获或处理异常，finally 块里的语句都会被执行。当在 try 块或 catch 块中遇到 return 语句时，finally 语句块将在方法返回之前被执行。
+  * 当 try 代码块和 catch 代码块中有 return 语句时，finally 仍然会被执行。执行 try 代码块或 catch 代码块中的 return 语句之前，都会先执行 finally 语句。
+  * 无论在 finally 代码块中是否修改返回值，返回值都不会改变，仍然是执行 finally 代码块之前的值。
+  * finally 代码块中的 return 语句一定会执行。
+  * 原理：
+    当 <mark style="background-color: #BBBFC4">`try`</mark> 或 <mark style="background-color: #BBBFC4">`catch`</mark> 块中存在 <mark style="background-color: #BBBFC4">`return`</mark> 时，JVM 的执行步骤是：
+    1. 计算 <mark style="background-color: #BBBFC4">`return`</mark> 后的表达式值（如 <mark style="background-color: #BBBFC4">`return a + b;`</mark> 会先计算 <mark style="background-color: #BBBFC4">`a + b`</mark> 的结果），并将结果暂存到一个临时变量中；
+    1. 暂停 <mark style="background-color: #BBBFC4">`return`</mark> 流程，跳转到 <mark style="background-color: #BBBFC4">`finally`</mark> 块执行所有代码；
+    1. <mark style="background-color: #BBBFC4">`finally`</mark> 块执行完毕后，再从临时变量中取出之前暂存的结果，完成 <mark style="background-color: #BBBFC4">`return`</mark> 操作。
+    1. 进入 <mark style="background-color: #BBBFC4">`finally`</mark> 块后，若执行到 <mark style="background-color: #BBBFC4">`return`</mark>，JVM 会直接使用该 <mark style="background-color: #BBBFC4">`return`</mark> 的值作为最终结果，**丢弃之前暂存的返回值**，且不会再回到 <mark style="background-color: #BBBFC4">`try`</mark>/<mark style="background-color: #BBBFC4">`catch`</mark> 块的 <mark style="background-color: #BBBFC4">`return`</mark>。
+* finally不执行情况：
+  * JVM 崩溃（`OutOfMemoryError`、`StackOverflowError`）
+  * 调用 `System.exit()`
+  * 线程被杀掉
+
+## try with resources
+
+把要手动关闭的资源放在try()括号里
+
+
+```PlainText
+try (BufferedInputStream bin = new BufferedInputStream(new FileInputStream(new File("test.txt")));
+     BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(new File("out.txt")))) {
+    int b;
+    while ((b = bin.read()) != -1) {
+        bout.write(b);
+    }
+}
+catch (IOException e) {
+    e.printStackTrace();
+}
+```
+
+## 线程池中的异常
+
+1、execute方法,可以看异常输出在控制台，而submit在控制台没有直接输出，必须调用Future.get()方法时，可以捕获到异常。
+
+2、一个线程出现异常不会影响线程池里面其他线程的正常执行。
+
+3、线程不是被回收而是线程池把这个线程移除掉，同时创建一个新的线程放到线程池中。
+
+# Objects
+
+## ==&equals
+
+* == 运算符：本质是比较「内存地址」。
+  * 对基本类型（如 int、char）：比较的是「值」（因基本类型直接存储值，无内存地址概念）。成员变量和局部变量没有区别。
+  * 对引用类型（如 String、自定义类对象）：比较的是「对象的内存地址」，判断是否为同一个对象。
+* equals() 方法：本质是「对象的内容比较」，但需注意默认行为。
+  * 未重写时（默认继承自 Object 类）：等同于 ==，比较「内存地址」。
+  * 重写后（如 String、Integer 等常用类）：按业务逻辑比较「对象内容」（如 String 的 equals() 比较字符序列是否一致）。
+  * 当两个 key 的哈希值hashCode()相同（哈希冲突）时，HashMap 会调用 <mark style="background-color: #BBBFC4">`equals()`</mark> 比较两者的实际内容，判断是否为同一个 key。
+
+## String
+
+字符串对象通过“+”的字符串拼接方式，实际上是通过 StringBuilder 调用 append() 方法实现的，拼接完成之后调用 toString() 得到一个 String 对象 。不过，在循环内使用“+”进行字符串的拼接的话，存在比较明显的缺陷：编译器不会创建单个 StringBuilder 以复用，会导致创建过多的 StringBuilder 对象
+
+* String底层：private final char[] value。value不可变，因此String提供的api需要重新创建一个字符数组。
+* concat/+：
+  * concat：计算拼接后的总长度（原长度 + str 长度）；再创建**新的字符数组**，先复制原字符串的字符，再复制 <mark style="background-color: #BBBFC4">`str`</mark> 的字符
+  * +：StringBuilder
+# 序列化
+
+## 怎么把一个对象从一个jvm转移到另一个jvm?
+
+1. 使用序列化和反序列化：将对象序列化为字节流，并将其发送到另一个 JVM，然后在另一个 JVM 中反序列化字节流恢复对象。这可以通过 Java 的 ObjectOutputStream 和 ObjectInputStream 来实现。
+2. 使用消息传递机制：利用消息传递机制，比如使用消息队列（如 RabbitMQ、Kafka）或者通过网络套接字进行通信，将对象从一个 JVM 发送到另一个。这需要自定义协议来序列化对象并在另一个 JVM 中反序列化。
+3. 使用远程方法调用（RPC）：可以使用远程方法调用框架，如  gRPC，来实现对象在不同 JVM 之间的传输。远程方法调用可以让你在分布式系统中调用远程 JVM 上的对象的方法。
+4. 使用共享数据库或缓存：将对象存储在共享数据库（如 MySQL、PostgreSQL）或共享缓存（如 Redis）中，让不同的 JVM 可以访问这些共享数据。这种方法适用于需要共享数据但不需要直接传输对象的场景。
+
+## 将对象转为二进制字节流具体怎么实现
+
+序列化机制是通过序列化协议来进行处理的，和 class 文件类似，它其实是定义了序列化后的字节流格式，然后对此格式进行操作，生成符合格式的字节流或者将字节流解析成对象。
+
+在Java中通过序列化对象流来完成序列化和反序列化：
+
+ObjectOutputStream：通过writeObject(）方法做序列化操作。
+
+ObjectInputStream：通过readObject()方法做反序列化操作。
+
+只有实现了Serializable或Externalizable接口的类的对象才能被序列化，否则抛出异常！
+
+### 序列化
+
+让类实现Serializable接口，对于不想进行序列化的变量，使用 transient 关键字修饰：
+
+![](/assets/RgOVblQ9lodlznxwuZ9c5IAgnAq.png)
+
+创建输出流并写入对象：
+
+![](/assets/ZOQrb3jaooght3x6GspcWKF8nKc.png)
+
+### 反序列化
+
+创建输入流并读取对象：
+
+![](/assets/Su14bNjPpoVvXvxEF4EcSOppnuc.png)
+
+## serialVersionUID
+
+序列化号属于版本控制的作用。反序列化时，会检查反序列化对象的 serialVersionUID 是否和当前类的 serialVersionUID 一致。如果 serialVersionUID 不一致则会抛出InvalidClassException 异常。强烈推荐每个序列化类都手动指定其serialVersionUID，如果不手动指定，那么编译器会动态生成默认的 serialVersionUID。
+
+特例：虽然serialVersionUID被static修饰，serialVersionUID 的序列化做了特殊处理。当一个对象被序列化时，serialVersionUID 会被写入到序列化的二进制流中；在反序列化时，也会解析它并做一致性判断，以此来验证序列化对象的版本一致性。
+
+也即serialVersionUID 只是用来被 JVM 识别，实际并没有被序列化。
+
+# 设计模式
+
+## 单例模式-双重锁校验
+
+![](/assets/SDXmbVNayoF6mxxmJRKcS7nXnNb.png)
+
+* 第一次校验，也就是第一个判断if(singleton == null)，意义是由于单例模式只需创建一个实例，所以当第一次创建实例成功之后，再次调用Singleton.getInstance()就没有必要进入同步锁代码块，直接返回之前创建的实列即可。
+* 第二次校验，也就是第二次判断if(singleton == null)：假如有两个线程，此时singleton由于为空，所以它们可以同时进入第一个if，A线程先拿到了锁，那么B线程只能等待A线程执行完把锁释放掉才能获取，A线程执行完此时已经创建了一个实例。如果没有第二个if判空，等B线程拿到锁资源后就会创建出第二个实例，第二次判空是必要的
+* volatile：说人话就是同一个线程内执行赋值操作顺序可能会和我们写的代码的顺序不一样，但是在同一个线程内感觉不到这种不同的顺序。但是在多线程可以感觉到，所以需要使用volatile来避免这种指令重排序导致的错误。参考如下情况，A、B两个线程创建单例，此时A已经赋值，但是没有完成变量初始化，而B线程看到instance已经赋值就拿来使用，因为instance没有完成初始化，所以使用过程中可能产生无法预料的后果。
+
+## 代理
+
+### 静态代理
+
+1. 定义一个接口及其实现类；
+2. 创建一个代理类同样实现这个接口
+3. 将目标对象注入进代理类，然后在代理类的对应方法调用目标类中的对应方法。
+
+Spring 中的 AOP 模块中：如果目标对象实现了接口，则默认采用 JDK 动态代理，否则采用 CGLIB 动态代理。
+
+### 动态代理
+
+#### JDK动态代理
+
+运行时生成代理类，通过实现目标类的接口来增强方法功能
+
+JDK 动态代理**只能增强被代理类所实现的接口中的方法**，无法直接增强代理类自身的非接口方法（即类中独有的方法，未在接口中声明的方法）。这是由 JDK 动态代理的底层实现机制决定的。
+
+JDK 动态代理的核心是通过 <mark style="background-color: #BBBFC4">`java.lang.reflect.Proxy`</mark> 类在运行时动态生成代理类的字节码，其生成的代理类有两个关键特征：
+
+1. **代理类会实现目标类所实现的所有接口**，并重写接口中的方法（这是增强逻辑的切入点）。
+2. **代理类与目标类之间没有继承关系**，而是通过持有目标类的引用（<mark style="background-color: #BBBFC4">`InvocationHandler`</mark> 中的 <mark style="background-color: #BBBFC4">`target`</mark> 对象）来调用目标方法。
+
+
+```Java
+interface Service { void doSomething(); }
+class RealService implements Service { public void doSomething(){System.out.println("RealService");} }
+
+Service proxy = (Service) Proxy.newProxyInstance(
+    RealService.class.getClassLoader(),
+    new Class[]{Service.class},
+    (proxyObj, method, args) -> {
+        System.out.println("Before");
+        Object result = method.invoke(new RealService(), args);
+        System.out.println("After");
+        return result;
+    }
+);
+proxy.doSomething();
+
+```
+
+#### cglib动态代理(code generation library)
+
+CGLIB（Code Generation Library）是一个基于字节码生成的代码生成库，它通过**继承目标类并生成子类（代理类）** 的方式实现动态代理，因此可以突破 JDK 动态代理的限制 —— 不仅能增强接口方法，还能增强目标类中**非接口的 public/protected 方法**（甚至包括未实现任何接口的类的方法）。
+
+CGLIB 的底层通过 ASM 字节码框架直接操作字节码，在运行时动态生成目标类的**子类**（代理类），并在子类中重写父类的方法（被增强的方法）。代理类会持有一个 <mark style="background-color: #BBBFC4">`MethodInterceptor`</mark>（方法拦截器）对象，当调用代理对象的方法时，会先触发拦截器的逻辑，再通过反射调用目标类的原方法，从而实现增强。
+
+子类能做的事，cglib都能做。
+
+
+```Java
+class RealService { public void doSomething(){System.out.println("RealService");} }
+
+Enhancer enhancer = new Enhancer();
+enhancer.setSuperclass(RealService.class);
+enhancer.setCallback((obj, method, args, proxy) -> {
+    System.out.println("Before");
+    Object result = proxy.invokeSuper(obj, args);
+    System.out.println("After");
+    return result;
+});
+RealService proxy = (RealService) enhancer.create();
+proxy.doSomething();
+
+```
+
+# Native&Unsafe
+
+## Native
+
+在Java中，native方法是一种特殊类型的方法，它允许Java代码调用外部的本地代码，即用C、C++或其他语言编写的代码。native关键字是Java语言中的一种声明，用于标记一个方法的实现将在外部定义。
+
+1. 生成JNI头文件：使用javah工具从你的Java类生成C/C++的头文件，这个头文件包含了所有native方法的原型。
+    
+```PlainText
+javah hellojni
+会生成一个hellojni.h文件，c++实现一遍，链接、加载即可
+```
+
+2. 编写本地代码：使用C/C++编写本地方法的实现，并确保方法签名与生成的头文件中的原型匹配。
+3. 编译本地代码：将C/C++代码编译成动态链接库（DLL，在Windows上），共享库（SO，在Linux上）
+4. 加载本地库：在Java程序中，使用System.loadLibrary()方法来加载你编译好的本地库，这样JVM就能找到并调用native方法的实现了。
+
+## Unsafe
+
+提供一些用于执行低级别、不安全操作的方法，如直接访问系统内存资源、自主管理内存资源等，Unsafe 提供的这些功能的实现需要依赖本地方法。
+
+
+
