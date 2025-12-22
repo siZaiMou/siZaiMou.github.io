@@ -1,3 +1,9 @@
+---
+layout: post
+title: "Java 基础：八股学习记录和补充"
+categories: [学习记录]
+---
+
 # Java基础
 
 # 跨平台
